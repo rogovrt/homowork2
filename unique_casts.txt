@@ -1,0 +1,19 @@
+template <class Parent, class Children, class Deleter>
+std::unique_ptr<Parent, Deleter> static_unique_pointer_cast(std::unique_ptr<Children, Deleter>&& r) {
+	auto p = static_cast<Parent *>(r.release()); 
+		//с помощью release "освобождаю" данный unique_ptr от ответственности за удаление объекта. 
+		//теперь p - указатель на объект, на который указывал unique_ptr, но приведенный к типу родителя.
+	return std::unique_ptr<Parent, Deleter>(p, std::move(r.get_deleter()));
+		//возвращаем нужный указатель, вызван конструктор, где предоставляется объект и rvalue ссылка на deleter для закрытия ресурсов
+}
+
+template<class Parent, class Children, class Deleter>
+std::unique_ptr<Children, Deleter> dynamic_unique_ptr_cast(std::unique_ptr<Parent, Deleter>&& r) {
+    if(Children *res = dynamic_cast<Children *>(r.get())) {
+        r.release();
+        return std::unique_ptr<Children, Deleter>(res, std::move(r.get_deleter()));
+    }
+    return std::unique_ptr<Derived, Del>(nullptr, r.get_deleter());
+}
+
+	//здесь сначала отделяется объект под указателем родителя, идет проверка на nullptr и только потом "освобождение", а так все аналогично
